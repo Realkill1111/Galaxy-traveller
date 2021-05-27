@@ -3,7 +3,6 @@ import random
 import pygame
 from pygame import *
 from array import *
-import time
 
 path = os.path.dirname(os.path.abspath(__file__))
 img_path = f"{path}/images"
@@ -38,9 +37,6 @@ scoreboard_rect = scoreboard_img.get_rect()
 offsetx = int(abs(score_rect.width  - scoreboard_rect.w)/2)
 offsety = int(abs(score_rect.height - scoreboard_rect.h)/2)
 
-dice_part = pygame.surface.Surface((65, 65))
-dice_rect = dice_part.get_rect()
-
 cell_size = 50
 cell_margin = 2
 cells = (board_x, board_y) = int(game_rect.width / cell_size), int(game_rect.height / cell_size)  # taille du board en coordonnées cell
@@ -68,7 +64,6 @@ def set_board(x,y,v):
     global board
     board[y-1][x-1] = v
 
-# type de cell dans board
 EMPTY   = 0
 PLAYER1 = 1
 PLAYER2 = 2
@@ -80,18 +75,19 @@ NOP = ' '
 ADD = 'a'
 SUB = 's'
 
-#            player1,player2
-colors     = [BLUE  , GREEN]
-credits    = [10    , 10]
-warps      = [10    , 10]
-dices      = [ 1    ,  1]
-regions    = [ 0    ,  0]
-last_cell  = [(0,0) ,(0,0)] #force le prochain path sur la derniere cell
+#player1,player2
+colors     = [BLUE, GREEN]
+credits    = [10, 10]
+warps      = [10, 10]
+dices      = [ 1,  1]
+regions    = [ 0,  0]
+last_cell  = [(0,0),(0,0)]
 left_cells = cells_nb
 
 PEN_EMPTY    = 0
 PEN_CURRENT  = 5
 board_colors = [YELLOW, colors[0], colors[1], RED, BLACK, CYAN]
+#print(board_colors)
 
 # logo market
 mkt_logo = pygame.image.load(f"{img_path}/market_logo_transparent.png").convert_alpha()
@@ -102,7 +98,6 @@ mktcells = []
 # score
 police = pygame.font.Font('freesansbold.ttf', 60)
 
-# affiche le score
 def update_scoreboard(p1, w1, c1, r1, p2, w2, c2, r2, backgroundcolor):
     global score_part, police
     w1r = Rect( 15+offsetx, 52+offsety,  93- 15, 80-52)
@@ -145,11 +140,9 @@ def update_scoreboard(p1, w1, c1, r1, p2, w2, c2, r2, backgroundcolor):
     score_part.blit(c2trs, c2r)
     score_part.blit(r2trs, r2r)
 
-# lance un dé
 def dice():
     return random.randint(1,6)
 
-# intervalle
 def in_range(v, min, max):
     if v < min:
         v = min
@@ -162,7 +155,7 @@ def cell_owned(cx, cy):
     b = get_board(cx,cy)
     return b != EMPTY
 
-# à partir du N° de la cell, rend ses coordonnées board
+# à partir du N° de la cell, rend ses coordonnées cell
 def cell_coord_pos(cell_num):
     global cells
 
@@ -180,7 +173,7 @@ def cell_coord_pos(cell_num):
 
     return (x,y)
 
-# à partir des coordonnées board cellx,celly, donne le numéro de la cell
+# à partir des coordonnées cellx,celly, donne le numéro de la cell
 def cell_coord_pos_num(x,y):
     global cells
     cell_num = x + (y-1)*board_x
@@ -197,7 +190,6 @@ def cell_coord_rect(cell_num):
     yy = (y-1)*cell_size
     return Rect( int(xx+cell_margin), int(yy+cell_margin), int(cell_size-cell_margin-1), int(cell_size-cell_margin-1) )
 
-# à partir de coordonnées  board, rend un rectangle de coordonnées screen
 def cell_coord_pos_rect(cell_x, cell_y):
     global cells
     cell_x = in_range(cell_x, 1, board_x)
@@ -206,7 +198,7 @@ def cell_coord_pos_rect(cell_x, cell_y):
     yy = (cell_y-1)*cell_size
     return Rect( int(xx+cell_margin), int(yy+cell_margin), int(cell_size-cell_margin-1), int(cell_size-cell_margin-1) )
 
-# à partir d'une coordonnée screen, rend les coordonnées board
+# à partir d'une coordonnée screen, rend les coordonnées cell
 def cell_coord_from_screen(x, y):
     global game_rect,cell_size
     x = in_range(x, 0, game_rect.width)
@@ -255,8 +247,10 @@ def create_zones():
             cells_nb -= w * h
             rx = random.randint(1, bx2-w)
             ry = random.randint(1, by2-h)
+            print("rx,ry=",rx,ry)
             rndx = rx + quadx
             rndy = ry + quady
+            print("rndx,rndy=",rndx,rndy)
             for x in range(w):
                 xx = x+1+rndx
                 for y in range(h):
@@ -268,6 +262,7 @@ def create_zones():
 
     #display_board()
     #print(zones_cells)
+
 
 def create_markets():
     global cells_nb, mktcells, zones_cells
@@ -284,18 +279,28 @@ def create_markets():
             mktcells.append(c)
             break
 
+
 def draw_markets():
     global game_part, mktcells, mkt_logo, score_rect
     for c in mktcells:
         cell_rect = cell_coord_pos_rect(c[0], c[1])
-        pygame.draw.rect(game_part, board_colors[MARKET], cell_rect, 0)
+        #print("draw_markets, cell_rect=", cell_rect)
         game_part.blit(mkt_logo, (cell_rect.x, cell_rect.y))
+    display_board()
+
+draw_board()
+draw_scoreboard()
+create_zones()
+create_markets()
+draw_markets()
 
 players_path = [[],[]]
 
 cell_prev = (0,0)
 
 # pas de diagonale
+
+
 def adjacent(cell_cur, testcell):
     (xc,yc) = cell_cur
     (xl,yl) = testcell
@@ -305,20 +310,10 @@ def adjacent(cell_cur, testcell):
         return True
     return False
 
-# fusion de couleurs
-def blend_color(color1, color2, blend_factor):
-    red1, green1, blue1 = color1
-    red2, green2, blue2 = color2
-    red = red1+(red2-red1)*blend_factor
-    green = green1+(green2-green1)*blend_factor
-    blue = blue1+(blue2-blue1)*blend_factor
-    return int(red), int(green), int(blue)
-
-# ajoute une cell valide (et adjacente) au path
 def add_cell(player, cell_cur, b):
     global credits, warps, players_path, last_cell
-    #print("ADD", "b=", b, "w=", warps[player], "cell_cur", cell_cur,
-    #      "path=", players_path[player], ', last_cell=', last_cell, last_cell[player])
+    print("ADD", "b=", b, "w=", warps[player], "cell_cur", cell_cur,
+          "path=", players_path[player], ', last_cell=', last_cell, last_cell[player])
     if cell_cur in players_path[player]:
         return False
     if len(players_path[player]) < 1 and last_cell[player] != (0, 0) and not adjacent(cell_cur, last_cell[player]):
@@ -329,14 +324,14 @@ def add_cell(player, cell_cur, b):
         return False
     if b == ZONE:
         return False
+    print("ADD2")
     players_path[player].append(cell_cur)
-    #print("ADD2", "path=", players_path[player])
+    print("ADD3", "path=", players_path[player])
     if b == EMPTY:
         credits[player] += 1
     warps[player] -= 1
     return True
 
-# enleve une cell au path
 def sub_cell(player, cell_cur, b):
     global credits, warps, players_path
     if cell_cur in players_path[player]:
@@ -344,10 +339,9 @@ def sub_cell(player, cell_cur, b):
         if b == EMPTY:
             credits[player] -= 1
         warps[player] += 1
-    #print("SUB", b, warps[player], cell_cur, players_path[player])
+    print("SUB", b, warps[player], cell_cur, players_path[player])
     return True
 
-# gere le path
 cell_mouse = (0,0)
 def manage_cell(player):
     global game_part, cell_prev, cell_mouse
@@ -374,29 +368,65 @@ def manage_cell(player):
     if ok:
         pen = player+1
     #print("manage_cell","ok=",ok,"b=",b,"pen=",pen,"color",board_colors[pen])
-    if b == EMPTY or b == MARKET:
+    if b == EMPTY:
         if cell_cur in players_path[player]:
             pen = player+1
-        cell_cur_rect = cell_coord_pos_rect(cell_x, cell_y)
-        color = board_colors[pen]
-        if b == MARKET:
-            color = blend_color(board_colors[pen], board_colors[MARKET], 0.8)
-        pygame.draw.rect(game_part, color, cell_cur_rect, 0)
-        if cell_cur in mktcells:
-            game_part.blit(mkt_logo, (cell_cur_rect.x, cell_cur_rect.y))
 
-    #efface la trace du curseur actuel
+        cell_cur_rect = cell_coord_pos_rect(cell_x, cell_y)
+        pygame.draw.rect(game_part, board_colors[pen], cell_cur_rect, 0)
+
     if cell_cur != cell_prev:
         if not cell_prev in players_path[player]:
             #print("manage_cell2 ", "cell_cur=", cell_cur,"cell_prev=",cell_prev )
             bprev = get_board(cell_prev[0], cell_prev[1])
-            if bprev == EMPTY or bprev == MARKET:
+            if bprev == EMPTY:
                 cell_prev_rect = cell_coord_pos_rect(cell_prev[0], cell_prev[1])
                 pygame.draw.rect(
                     game_part, board_colors[bprev], cell_prev_rect, 0)
-                if bprev == MARKET:
-                    game_part.blit(mkt_logo, (cell_prev_rect.x, cell_prev_rect.y))
+        cell_prev = cell_cur
 
+
+def manage_cell2(player):
+    global game_part, cell_prev, left_cells, players_path, mktcells, mkt_logo
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    if mouse_y < score_height:
+        return
+    mouse_click = pygame.mouse.get_pressed(3)
+    color = CYAN
+    cell_cur = (cell_x,cell_y) = cell_coord_from_screen(mouse_x, mouse_y-score_height)
+    if mouse_click == (0,0,0):
+        op = NOP
+    if mouse_click == (1,0,0):
+        op = ADD
+        if not cell_cur in players_path[player]:
+            if len(players_path[player]) == 0:
+                if (last_cell[player] != (0, 0) and adjacent(cell_cur, last_cell[player])) or adjacent(cell_cur, players_path[player][-1]):
+                    if warps[player] > 0:
+                        credits[player] += 1
+                        warps[player] -= 1
+                        players_path[player].append(cell_cur)
+    if mouse_click == (0,0,1):
+        op = SUB
+        #print(mouse_click)
+        if cell_cur in players_path[player][-1]:  #oblige à prendre le dernier
+            credits[player] -= 1
+            warps[player] += 1
+            players_path[player].remove(cell_cur)
+    if cell_cur in players_path[player]:
+        color = colors[player]
+    cell_cur_rect = cell_coord_pos_rect(cell_x, cell_y)
+    if not cell_cur in mktcells:
+        pygame.draw.rect(game_part, color, cell_cur_rect, 0)
+    if cell_cur != cell_prev:
+        cell_prev_rect = cell_coord_pos_rect(cell_prev[0], cell_prev[1])
+        #print(cell_cur, cell_prev, cell_cur_rect, cell_prev_rect)
+        if not cell_prev in mktcells:
+            if not cell_prev in players_path[player]:
+                pygame.draw.rect(game_part, YELLOW, cell_prev_rect, 0)
+        else:
+            if not cell_prev in players_path[player]:
+                game_part.blit(
+                    mkt_logo, (cell_prev_rect[0], cell_prev_rect[1]))
         cell_prev = cell_cur
 
 def draw_scores():
@@ -409,57 +439,27 @@ def draw_scores():
 
     return 0
 
-dices_img = []
-def load_dices():
-    global dices_img, dice_rect, img_path
-    for dn in range(6):
-        img = pygame.image.load(f"{img_path}/d{dn+1}.png").convert_alpha()
-        dd = pygame.transform.scale(img, (dice_rect.w,dice_rect.h))
-        dices_img.append(dd)
-
-dorig = [(10, 16+offsety), (725, 16+offsety)] # emplacement des dés crédit et warp
 def show_dices(c,w):
-    global dices_img, dorig
-    for i in range(6):
-        score_part.blit(dices_img[i], dorig[0])
-        screen.blit(score_part, (0, 0))
-        pygame.display.flip()
-        time.sleep(0.2)
-    score_part.blit(dices_img[c-1], dorig[0])
-    screen.blit(score_part, (0, 0))
-    pygame.display.flip()
-    time.sleep(1)
-    for i in range(6):
-        score_part.blit(dices_img[i], dorig[1])
-        screen.blit(score_part, (0, 0))
-        pygame.display.flip()
-        time.sleep(0.2)
-    score_part.blit(dices_img[w-1], dorig[1])
-    screen.blit(score_part, (0, 0))
-    pygame.display.flip()
-    time.sleep(1)
+    return 0
 
-def accept_dices():
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_y:
-                    return True
-                if event.key == pygame.K_n:
-                    return False
+def accept_dices(c,w):
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_y:
+                return True
+            return False
 
 def throw_dices(player):
-    if len(players_path[player]) > 0 and players_path[player][-1] in mktcells:
+    if players_path[player][-1] in mktcells:
         c = dice()
         w = dice()
         show_dices(c,w)
-        dices[player] -= 1
-        if accept_dices():
-            if dices[player] < 1 :
+        if accept_dices(c, w):
+            dices[player] -= 1
+            if dices[player] == 0:
                 credits[player] -= c
                 warps[player] += w
-            draw_scores()
-        return turn(player)
+    #print("credits=",credits,", warps=", warps)
 
 def update_board(cx,cy,op,player):
     global board
@@ -470,7 +470,6 @@ def update_board(cx,cy,op,player):
         if get_board(cx, cy) == (player+1):
             set_board(cx,cy,EMPTY)
 
-# efface le path
 def reset_path(player):
     global game_part, players_path, left_cells, last_cell
     for (cx,cy) in players_path[player]:
@@ -482,7 +481,6 @@ def reset_path(player):
     players_path[player] = []
     draw_markets()
 
-# tour par tour
 def turn(player):
     global cell_prev, left_cells, regions, last_cell
     cell_prev = (0,0)
@@ -490,75 +488,52 @@ def turn(player):
         update_board(cx, cy, ADD, player)
         regions[player] += 1
         left_cells -= 1
-    # print(  "turn player=:", player,
-    #         "players_path=", players_path[player],
-    #         "left_cells=", left_cells,
-    #         "credits=", credits[player],
-    #         "warps=",warps[player],
-    #         "next=", 1-player)
-    #display_board()
+    print(  "turn player=:", player,
+            "players_path=", players_path[player],
+            "left_cells=", left_cells,
+            "credits=", credits[player],
+            "warps=",warps[player],
+            "next=", 1-player)
+    display_board()
     last_cell[player] = players_path[player][-1]
     players_path[player] = []
     dices[player] = 1
     draw_scores()
     return 1-player
 
-def wait_keypress():
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                return
+def game_over():
+    print("Game Over")
 
-gameover_img = pygame.image.load(f"{img_path}/gameover.png").convert_alpha()
-
-def show_game_over():
-    global screen, gameover_img
-    gameover_rect = gameover_img.get_rect()
-    gooffsetx = int(abs(screen_width  - gameover_rect.w)/2)
-    gooffsety = int(abs(screen_height - gameover_rect.h)/2)
-    screen.blit(gameover_img, (gooffsetx, gooffsety))
-    pygame.display.flip()
-    wait_keypress()
+draw_scores()
 
 def loop():
     player = 0
-    game_over = False
     while True:
         for event in pygame.event.get():
             if(event.type==pygame.QUIT or (event.type==pygame.KEYDOWN and event.key==pygame.K_ESCAPE)) :
                 return
 
-            if not game_over:
-                if left_cells == 0 or (0 in credits) or (0 in warps):
-                    show_game_over()
-                    return
+            if left_cells == 0 or (0 in credits) or (0 in warps):
+                game_over()
+                return
 
-                if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
-                    manage_cell(player)
-                
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE:
-                    reset_path(player)
+            if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
+                manage_cell(player)
+            
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE:
+                reset_path(player)
 
-                if event.type==pygame.KEYDOWN and event.key==pygame.K_d :
-                    player = throw_dices(player)
+            if event.type==pygame.KEYDOWN and event.key==pygame.K_d :
+                throw_dices(player)
 
-                if event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER):
-                    player = turn(player)
+            if event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER):
+                player = turn(player)
 
         screen.blit(score_part, (0, 0))
         screen.blit(game_part, (0, score_rect.h))
 
         pygame.display.flip()
-        pygame.time.Clock().tick(2)
 
-# lance le jeu
-draw_board()
-draw_scoreboard()
-create_zones()
-create_markets()
-draw_markets()
-draw_scores()
-load_dices()
 loop()
 
 pygame.quit()
